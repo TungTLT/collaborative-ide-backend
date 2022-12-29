@@ -136,22 +136,22 @@ module.exports = (io, redisClient) => {
 
             // user colors
             const userToColor = await redisClient.hGetAll(`${roomId}:userColors`)
-            .catch((err) => {
-                console.error(redBright.bold(`get userColors map error: ${err}`))
-                // TODO: handle error
-                handleError('Can\'t get userColors map', userId)
-                return
-            }) ?? {}
+                .catch((err) => {
+                    console.error(redBright.bold(`get userColors map error: ${err}`))
+                    // TODO: handle error
+                    handleError('Can\'t get userColors map', userId)
+                    return
+                }) ?? {}
 
             userToColor[`${userId}`] = getUserColor(userToColor)
 
             await redisClient.hSet(`${roomId}:userColors`, userToColor)
-            .catch((err) => {
-                console.error(redBright.bold(`save userColors error: ${err}`))
-                // TODO: handle error
-                handleError('Can\'t save userColors', userId)
-                return
-            })
+                .catch((err) => {
+                    console.error(redBright.bold(`save userColors error: ${err}`))
+                    // TODO: handle error
+                    handleError('Can\'t save userColors', userId)
+                    return
+                })
 
             const roomName = `ROOM:${roomId}`
             socket.join(roomName)
@@ -232,12 +232,12 @@ module.exports = (io, redisClient) => {
 
                 // remove user color
                 await redisClient.hDel(`${roomId}:userColors`, userId)
-                .catch((err) => {
-                    console.error(redBright.bold(`remove userColor error: ${err}`))
-                    // TODO: handle error
-                    handleError('Can\'t remove userColor', userId)
-                    return
-                })
+                    .catch((err) => {
+                        console.error(redBright.bold(`remove userColor error: ${err}`))
+                        // TODO: handle error
+                        handleError('Can\'t remove userColor', userId)
+                        return
+                    })
             }
             else {
                 // delete user list in a room
@@ -321,6 +321,11 @@ module.exports = (io, redisClient) => {
             const roomName = `ROOM:${roomId}`
             socket.in(roomName).emit('CHAT_MESSAGE', { 'senderName': username, message })
         })
+
+        // socket.on('LISTEN_TO_SPEAKER', ({ roomId, isSpeaking }) => {
+        //     const roomName = `ROOM:${roomId}`
+        //     socket.in(roomName).emit('LISTEN_TO_SPEAKER', { socket.id, isSpeaking })
+        // })
 
     })
 
