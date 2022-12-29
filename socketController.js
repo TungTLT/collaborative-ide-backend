@@ -214,6 +214,14 @@ module.exports = (io, redisClient) => {
                     handleError('Can\'t delete room', userId)
                     return
                 })
+
+                // delete message list
+                await redisClient.del(`${roomId}:messages`).catch((err) => {
+                    console.error(redBright.bold(`delete message list in room with ${err}`))
+                    // TODO: handle error
+                    handleError('Can\'t delete room message list', userId)
+                    return
+                })
             }
         })
 
