@@ -1,13 +1,25 @@
 const SOCKET_IO_EVENT = require('./utils/constants')
 const { blueBright, redBright } = require('chalk')
 
+const USER_COLORS = [
+    "#355FFA",
+    "#0ac285",
+    "#F85212",
+    "#bf4545",
+    "#e599a6",
+    "#a28144",
+    "#e08300",
+    "#A545EE",
+    "#6565cd",
+    '#669999',
+];
+const USER_DEFAULT_COLOR = "#808080";
 
 module.exports = (io, redisClient) => {
     io.on(SOCKET_IO_EVENT.CONNECTION, (socket) => {
 
         socket.on('CONNECTED_TO_ROOM_MEDIA', async ({ roomId }) => {
             // get current connected to room users
-            console.log('event connect to room media')
             const users = await redisClient.lRange(`${roomId}:users`, 0, -1)
                 .catch((err) => {
                     console.error(redBright.bold(`get users with ${err}`))
@@ -122,11 +134,31 @@ module.exports = (io, redisClient) => {
                 }
             }))
 
+            // user colors
+            const userToColor = await redisClient.hGetAll(`${roomId}:userColors`)
+            .catch((err) => {
+                console.error(redBright.bold(`get userColors map error: ${err}`))
+                // TODO: handle error
+                handleError('Can\'t get userColors map', userId)
+                return
+            }) ?? {}
+
+            userToColor[`${userId}`] = getUserColor(userToColor)
+
+            await redisClient.hSet(`${roomId}:userColors`, userToColor)
+            .catch((err) => {
+                console.error(redBright.bold(`save userColors error: ${err}`))
+                // TODO: handle error
+                handleError('Can\'t save userColors', userId)
+                return
+            })
+
             const roomName = `ROOM:${roomId}`
             socket.join(roomName)
             io.in(roomName).emit(SOCKET_IO_EVENT.ROOM_CONNECTION, {
                 'users': userInfors,
-                'newUserId': socket.id
+                'newUserId': socket.id,
+                'userColors': userToColor
             })
 
             // get current code of roomName
@@ -197,6 +229,15 @@ module.exports = (io, redisClient) => {
                 const roomName = `ROOM:${roomId}`
                 io.in(roomName).emit('ROOM:DISCONNECTION_MEDIA', socket.id)
                 io.in(roomName).emit(SOCKET_IO_EVENT.ROOM_DISCONNECT, socket.id)
+
+                // remove user color
+                await redisClient.hDel(`${roomId}:userColors`, userId)
+                .catch((err) => {
+                    console.error(redBright.bold(`remove userColor error: ${err}`))
+                    // TODO: handle error
+                    handleError('Can\'t remove userColor', userId)
+                    return
+                })
             }
             else {
                 // delete user list in a room
@@ -220,6 +261,13 @@ module.exports = (io, redisClient) => {
                     console.error(redBright.bold(`delete message list in room with ${err}`))
                     // TODO: handle error
                     handleError('Can\'t delete room message list', userId)
+                    return
+                })
+                // delete userColors
+                await redisClient.del(`${roomId}:userColors`).catch((err) => {
+                    console.error(redBright.bold(`delete userColors error ${err}`))
+                    // TODO: handle error
+                    handleError('Can\'t delete userColors', userId)
                     return
                 })
             }
@@ -278,5 +326,19 @@ module.exports = (io, redisClient) => {
 
     const handleError = (message, socketId) => {
         io.to(socketId).emit(SOCKET_IO_EVENT.DB_ERROR, message)
+    }
+
+    function getUserColor(rUserToColor) {
+        const userToColor = new Map(Object.entries(rUserToColor))
+
+        var value = USER_DEFAULT_COLOR;
+        USER_COLORS.forEach(e => {
+            const values = Array.from(userToColor.values() ?? {})
+
+            if (!values.includes(e)) {
+                value = e
+            }
+        })
+        return value;
     }
 }
