@@ -322,10 +322,10 @@ module.exports = (io, redisClient) => {
             socket.in(roomName).emit('CHAT_MESSAGE', { 'senderName': username, message })
         })
 
-        // socket.on('LISTEN_TO_SPEAKER', ({ roomId, isSpeaking }) => {
-        //     const roomName = `ROOM:${roomId}`
-        //     socket.in(roomName).emit('LISTEN_TO_SPEAKER', { socket.id, isSpeaking })
-        // })
+        socket.on('LISTEN_TO_SPEAKER', ({ roomId, isSpeaking }) => {
+            const roomName = `ROOM:${roomId}`
+            socket.in(roomName).emit('LISTEN_TO_SPEAKER', { 'userId': socket.id, isSpeaking })
+        })
 
     })
 
