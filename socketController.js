@@ -28,7 +28,23 @@ module.exports = (io, redisClient) => {
                     return
                 })
 
-            const userInRoom = users.filter(id => id !== socket.id)
+            const userInRoom = await Promise.all(users.filter(id => id !== socket.id).map(async (id, index) => {
+                userIn4 = await redisClient.hGetAll(`${id}:userInfo`)
+                    .catch((err) => {
+                        console.error(redBright.bold(`get users with ${err}`))
+                        // TODO: handle error
+                        return
+                    })
+
+                if (userIn4 != null) {
+                    return {
+                        'id': id,
+                        'camState': userIn4.camState === 'true' ? true : false,
+                        'micState': userIn4.micState === 'true' ? true : false,
+                    }
+                }
+            }))
+
             socket.emit('ALL_USERS', userInRoom)
         })
 
@@ -92,6 +108,8 @@ module.exports = (io, redisClient) => {
             await redisClient.hSet(`${userId}:userInfo`, {
                 "username": username,
                 "roomId": roomId,
+                "micState": "true",
+                "camState": "true"
             }).catch((err) => {
                 console.error(redBright.bold(`create user info with ${err}`))
                 // TODO: handle error
@@ -292,15 +310,19 @@ module.exports = (io, redisClient) => {
             socket.in(roomName).emit(SOCKET_IO_EVENT.COMPILE_STATE_CHANGED, state)
         })
 
-        socket.on('TOGGLE_MICROPHONE', ({ userId, roomId, micState }) => {
+        socket.on('TOGGLE_MICROPHONE', async ({ userId, roomId, micState }) => {
             const roomName = `ROOM:${roomId}`
+            const micValue = micState ? 'true' : 'false'
+            await redisClient.hSet(`${userId}:userInfo`, 'micState', micValue)
             socket.in(roomName).emit('SOMEONE_TOGGLE_MICROPHONE', {
                 userId, micState
             })
         })
 
-        socket.on('TOGGLE_CAMERA', ({ userId, roomId, camState }) => {
+        socket.on('TOGGLE_CAMERA', async ({ userId, roomId, camState }) => {
             const roomName = `ROOM:${roomId}`
+            const camValue = camState ? 'true' : 'false'
+            await redisClient.hSet(`${userId}:userInfo`, 'camState', camValue)
             socket.in(roomName).emit('SOMEONE_TOGGLE_CAMERA', {
                 userId, camState
             })
