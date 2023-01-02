@@ -1,4 +1,4 @@
-const SOCKET_IO_EVENT = require('./utils/constants')
+const { SOCKET_IO_EVENT } = require('./utils/constants')
 const { blueBright, redBright } = require('chalk')
 
 const USER_COLORS = [
@@ -57,16 +57,19 @@ module.exports = (io, redisClient) => {
         })
 
         socket.on(SOCKET_IO_EVENT.CODE_INSERT, async ({ roomId, data }) => {
+            console.log('event code insert')
             const roomName = `ROOM:${roomId}`
             socket.to(roomName).emit(SOCKET_IO_EVENT.CODE_INSERT, data);
         })
 
         socket.on(SOCKET_IO_EVENT.CODE_REPLACE, async ({ roomId, data }) => {
+            console.log('event code replace')
             const roomName = `ROOM:${roomId}`
             socket.to(roomName).emit(SOCKET_IO_EVENT.CODE_REPLACE, data);
         })
 
         socket.on(SOCKET_IO_EVENT.CODE_DELETE, async ({ roomId, data }) => {
+            console.log('event code delete')
             const roomName = `ROOM:${roomId}`
             socket.to(roomName).emit(SOCKET_IO_EVENT.CODE_DELETE, data);
         })
@@ -188,7 +191,10 @@ module.exports = (io, redisClient) => {
                     return
                 })
             // emit event CODE_CHANGED to just connect user
-            io.to(userId).emit(SOCKET_IO_EVENT.CODE_CHANGED, code)
+            if (code.length !== 0) {
+                console.log('emit')
+                io.to(userId).emit(SOCKET_IO_EVENT.CODE_CHANGED, code)
+            }
 
             // get current message chat of roomName
             var roomMessages = await redisClient.lRange(`${roomId}:messages`, 0, -1)

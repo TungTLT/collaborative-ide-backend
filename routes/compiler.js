@@ -3,11 +3,12 @@ var router = express.Router();
 const axios = require('axios')
 const chalk = require('chalk');
 const { PLClient } = require('../database/programming_language_client')
+const { COMPILER_URL } = require('../utils/constants')
 
 const plClient = new PLClient()
 
 const compilerClient = axios.create({
-  baseURL: 'https://api.jdoodle.com/v1/execute',
+  baseURL: COMPILER_URL,
   timeout: 5000,
   headers: {
     "accept-encoding": "*"

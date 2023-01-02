@@ -21,5 +21,7 @@ const SOCKET_IO_EVENT = {
     COMPILE_STATE_CHANGED: 'COMPILE_STATE_CHANGED',
 }
 
-module.exports = REDIS_EVENT
-module.exports = SOCKET_IO_EVENT
+const FRONT_END_URL = "https://colaborative-ide-socket.web.app"
+const COMPILER_URL = "https://api.jdoodle.com/v1/execute"
+
+module.exports = { REDIS_EVENT, SOCKET_IO_EVENT, FRONT_END_URL, COMPILER_URL }

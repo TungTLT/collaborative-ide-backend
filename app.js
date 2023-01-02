@@ -6,6 +6,7 @@ const { Server } = require('socket.io')
 const cors = require('cors')
 const { greenBright, redBright } = require('chalk')
 const { redisClient } = require('./database/redis_client')
+const { FRONT_END_URL } = require('./utils/constants')
 require('dotenv').config()
 
 
@@ -17,8 +18,8 @@ var app = express();
 const server = http.createServer(app)
 const io = new Server(server, {
     cors: {
-        origin: "https://colaborative-ide-socket.web.app"
-        // origin: "http://localhost:3000"
+        // origin: FRONT_END_URL
+        origin: "http://localhost:3000"
     }
 })
 
