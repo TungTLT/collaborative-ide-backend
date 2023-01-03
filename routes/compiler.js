@@ -9,7 +9,7 @@ const plClient = new PLClient()
 
 const compilerClient = axios.create({
   baseURL: COMPILER_URL,
-  timeout: 5000,
+  timeout: 50000,
   headers: {
     "accept-encoding": "*"
   }
@@ -21,10 +21,12 @@ router.post('/execute', async (req, res) => {
   const script = req.body['script']
   const versionName = req.body['version']
 
+  console.log(versionName)
+
   const findLanguage = plClient.findLanguage(languageName)
   if (findLanguage) {
     const languageCode = findLanguage.languageCode
-    const selectVersion = plClient.findVersionIndex(findLanguage, versionName)
+    const selectVersion = plClient.findVersion(findLanguage, versionName)
 
     if (selectVersion) {
       const versionIndex = selectVersion.index

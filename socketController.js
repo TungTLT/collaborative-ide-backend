@@ -1,5 +1,6 @@
 const { SOCKET_IO_EVENT } = require('./utils/constants')
-const { blueBright, redBright } = require('chalk')
+const { blueBright, redBright } = require('chalk');
+const { PLClient } = require('./database/programming_language_client');
 
 const USER_COLORS = [
     "#355FFA",
@@ -182,18 +183,29 @@ module.exports = (io, redisClient) => {
                 'userColors': userToColor
             })
 
-            // get current code of roomName
-            const code = await redisClient.hGet(`${roomId}:roomInfo`, 'code')
+            const roomInfo = await redisClient.hGetAll(`${roomId}:roomInfo`)
                 .catch((err) => {
                     console.error(redBright.bold(`get code of room with ${err}`))
                     // TODO: handle error
                     handleError('Can\'t get room information', userId)
                     return
                 })
-            // emit event CODE_CHANGED to just connect user
-            if (code.length !== 0) {
-                console.log('emit')
-                io.to(userId).emit(SOCKET_IO_EVENT.CODE_CHANGED, code)
+
+            // get current code of roomName
+            const code = roomInfo.code
+
+            console.log(roomInfo)
+            if (users.length > 1) {
+                console.log('emit to new user')
+                // emit event CODE_CHANGED to just connect user
+                if (code.length !== 0)
+                    io.to(userId).emit(SOCKET_IO_EVENT.CODE_CHANGED, code)
+
+                // get room programming language
+                io.to(userId).emit(SOCKET_IO_EVENT.CHANGE_LANGUAGE, roomInfo.language)
+
+                // get room language version index
+                io.to(userId).emit(SOCKET_IO_EVENT.CHANGE_VERSION, roomInfo.versionIndex)
             }
 
             // get current message chat of roomName
@@ -297,18 +309,50 @@ module.exports = (io, redisClient) => {
             }
         })
 
-        socket.on(SOCKET_IO_EVENT.CHANGE_LANGUAGE, (params) => {
+        socket.on(SOCKET_IO_EVENT.CHANGE_LANGUAGE, async (params) => {
             const roomId = params['roomId']
             const newLanguage = params['newLanguage']
             const roomName = `ROOM:${roomId}`
+
+            await redisClient.hSet(`${roomId}:roomInfo`, {
+                'language': newLanguage, 'versionIndex': "0"
+            }).catch((err) => {
+                console.error(redBright.bold(` set room info error ${err}`))
+                // TODO: handle error
+                handleError('Can\'t set room info', userId)
+                return
+            })
+
+            const templateForNewLang = new PLClient().findLanguage(newLanguage).template
+
+            await redisClient.hSet(`${roomId}:roomInfo`, 'code', templateForNewLang)
+                .catch((err) => {
+                    console.error(redBright.bold(` set code of room error ${err}`))
+                    // TODO: handle error
+                    handleError('Can\'t set code of room', userId)
+                    return
+                })
+
+            socket.in(roomName).emit(SOCKET_IO_EVENT.CODE_CHANGED, templateForNewLang)
+
             socket.in(roomName).emit(SOCKET_IO_EVENT.CHANGE_LANGUAGE, newLanguage)
         })
 
-        socket.on(SOCKET_IO_EVENT.CHANGE_VERSION, (params) => {
+        socket.on(SOCKET_IO_EVENT.CHANGE_VERSION, async (params) => {
             const roomId = params['roomId']
             const newVersionIndex = params['newVersionIndex']
             const roomName = `ROOM:${roomId}`
+
+            await redisClient.hSet(`${roomId}:roomInfo`, 'versionIndex', newVersionIndex)
+                .catch((err) => {
+                    console.error(redBright.bold(`set room info error ${err}`))
+                    // TODO: handle error
+                    handleError('Can\'t set room info', userId)
+                    return
+                })
+
             socket.in(roomName).emit(SOCKET_IO_EVENT.CHANGE_VERSION, newVersionIndex)
+
         })
 
         socket.on(SOCKET_IO_EVENT.COMPILE_STATE_CHANGED, ({ roomId, state }) => {

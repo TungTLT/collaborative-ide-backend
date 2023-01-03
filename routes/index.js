@@ -17,9 +17,16 @@ router.get('/', function (req, res, next) {
 router.post('/create-room-with-user', async (req, res) => {
   const roomId = v4()
 
+  const defaultLanguage = new PLClient().findLanguage('Java')
+  const defaultLanguageVersionIndex = new PLClient().findVersionIndex(defaultLanguage, defaultLanguage.versions[0].name)
+
+  console.log(defaultLanguageVersionIndex)
+
   await redisClient.hSet(`${roomId}:roomInfo`, {
     "created": moment().toString(),
     "code": "",
+    "language": defaultLanguage.name,
+    "versionIndex": defaultLanguageVersionIndex,
   })
     .catch((err) => {
       console.log(redBright.bold(`create room info with ${err}`))
