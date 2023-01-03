@@ -58,19 +58,16 @@ module.exports = (io, redisClient) => {
         })
 
         socket.on(SOCKET_IO_EVENT.CODE_INSERT, async ({ roomId, data }) => {
-            console.log('event code insert')
             const roomName = `ROOM:${roomId}`
             socket.to(roomName).emit(SOCKET_IO_EVENT.CODE_INSERT, data);
         })
 
         socket.on(SOCKET_IO_EVENT.CODE_REPLACE, async ({ roomId, data }) => {
-            console.log('event code replace')
             const roomName = `ROOM:${roomId}`
             socket.to(roomName).emit(SOCKET_IO_EVENT.CODE_REPLACE, data);
         })
 
         socket.on(SOCKET_IO_EVENT.CODE_DELETE, async ({ roomId, data }) => {
-            console.log('event code delete')
             const roomName = `ROOM:${roomId}`
             socket.to(roomName).emit(SOCKET_IO_EVENT.CODE_DELETE, data);
         })
@@ -194,9 +191,7 @@ module.exports = (io, redisClient) => {
             // get current code of roomName
             const code = roomInfo.code
 
-            console.log(roomInfo)
             if (users.length > 1) {
-                console.log('emit to new user')
                 // emit event CODE_CHANGED to just connect user
                 if (code.length !== 0)
                     io.to(userId).emit(SOCKET_IO_EVENT.CODE_CHANGED, code)
