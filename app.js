@@ -18,8 +18,8 @@ var app = express();
 const server = http.createServer(app)
 const io = new Server(server, {
     cors: {
-        origin: FRONT_END_URL
-        // origin: "http://localhost:3000"
+        // origin: FRONT_END_URL
+        origin: "http://localhost:3000"
     }
 })
 

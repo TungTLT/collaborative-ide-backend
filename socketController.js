@@ -373,9 +373,11 @@ module.exports = (io, redisClient) => {
             })
         })
 
-        socket.on('CHAT_MESSAGE', async ({ username, roomId, message }) => {
+        socket.on('CHAT_MESSAGE', async ({ username, roomId, message, date }) => {
+            console.log(`receive date: ${date}`)
+
             // Map object to string
-            var messageEntity = `{"username": "${username}", "message": "${message}"}`
+            var messageEntity = `{"username": "${username}", "message": "${message}", "date": "${date}"}`
             // save into redis
             await redisClient.rPush(`${roomId}:messages`, messageEntity)
                 .catch((err) => {
@@ -386,7 +388,7 @@ module.exports = (io, redisClient) => {
                 })
 
             const roomName = `ROOM:${roomId}`
-            socket.in(roomName).emit('CHAT_MESSAGE', { 'senderName': username, message })
+            socket.in(roomName).emit('CHAT_MESSAGE', { 'senderName': username, message, date })
         })
 
         socket.on('LISTEN_TO_SPEAKER', ({ roomId, isSpeaking }) => {
