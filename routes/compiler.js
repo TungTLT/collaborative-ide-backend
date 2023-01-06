@@ -21,8 +21,6 @@ router.post('/execute', async (req, res) => {
   const script = req.body['script']
   const versionName = req.body['version']
 
-  console.log(versionName)
-
   const findLanguage = plClient.findLanguage(languageName)
   if (findLanguage) {
     const languageCode = findLanguage.languageCode

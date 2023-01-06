@@ -37,6 +37,7 @@ router.post('/create-room-with-user', async (req, res) => {
   res.status(201).send({ roomId })
 })
 
+/* GET find room with id */
 router.get('/find-room-with-id', async (req, res) => {
   const findRoomId = `${req.query['roomId']}:roomInfo`
 
@@ -54,6 +55,41 @@ router.get('/find-room-with-id', async (req, res) => {
   } else {
     console.log(redBright.bold(`Not found room`))
     res.status(404).send("Not found room")
+  }
+})
+
+/* GET check duplicate name */
+router.get('/check-if-username-exist', async (req, res) => {
+  const username = req.query['username']
+  const roomId = req.query['roomId']
+  const userListKey = `${roomId}:users`
+
+  console.log(username)
+
+  const userIdInRoom = await redisClient.lRange(userListKey, 0, -1)
+    .catch((err) => {
+      console.log(redBright.bold(`find user in room with ${err}`))
+      res.status(404).send("Not found user list in room")
+      return
+    })
+
+  const usernameList = await Promise.all(userIdInRoom.map(async (id) => {
+    return await redisClient.hGet(`${id}:userInfo`, 'username')
+      .catch((err) => {
+        console.log(redBright.bold(`find user info with ${err}`))
+        res.status(404).send("There is some error!")
+        return
+      })
+  }))
+
+  if (!usernameList.includes(username)) {
+    res.status(200).send({
+      'isUsernameExist': false
+    })
+  } else {
+    res.status(200).send({
+      'isUsernameExist': true
+    })
   }
 })
 
