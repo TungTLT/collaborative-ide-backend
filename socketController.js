@@ -304,6 +304,39 @@ module.exports = (io, redisClient) => {
             }
         })
 
+        socket.on(SOCKET_IO_EVENT.COLOR_CHANGED, async (data) => {
+            const userId = data.userId;
+            const color = data.color;
+            const user_info = await redisClient.hGetAll(`${userId}:userInfo`)
+                .catch((err) => {
+                    console.error(redBright.bold(`get user info with ${err}`))
+                    // TODO: handle error
+                    handleError('Can\'t get user information', socket.id)
+                    return
+                })
+            const roomId = user_info['roomId']
+
+            const userToColor = await redisClient.hGetAll(`${roomId}:userColors`)
+                .catch((err) => {
+                    console.error(redBright.bold(`get userColors map error: ${err}`))
+                    // TODO: handle error
+                    handleError('Can\'t get userColors map', userId)
+                    return
+                }) ?? {}
+
+            userToColor[`${userId}`] = color
+
+            await redisClient.hSet(`${roomId}:userColors`, userToColor)
+                .catch((err) => {
+                    console.error(redBright.bold(`save userColors error: ${err}`))
+                    // TODO: handle error
+                    handleError('Can\'t save userColors', userId)
+                    return
+                })
+            const roomName = `ROOM:${roomId}`
+            socket.to(roomName).emit(SOCKET_IO_EVENT.COLOR_CHANGED, {userId, userToColor})
+        })
+
         socket.on(SOCKET_IO_EVENT.CHANGE_LANGUAGE, async (params) => {
             const roomId = params['roomId']
             const newLanguage = params['newLanguage']
