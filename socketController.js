@@ -193,7 +193,7 @@ module.exports = (io, redisClient) => {
 
             if (users.length > 1) {
                 // emit event CODE_CHANGED to just connect user
-                if (code.length !== 0)
+                if (code && code.length !== 0)
                     io.to(userId).emit(SOCKET_IO_EVENT.CODE_CHANGED, code)
 
                 // get room programming language
