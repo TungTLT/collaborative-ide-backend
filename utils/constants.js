@@ -22,8 +22,7 @@ const SOCKET_IO_EVENT = {
     COLOR_CHANGED: 'COLOR_CHANGED'
 }
 
-// const FRONT_END_URL = "https://colaborative-ide-socket.web.app"
-const FRONT_END_URL = "https://localhost:3000"
+const FRONT_END_URL = "https://colaborative-ide-socket.web.app"
 const COMPILER_URL = "https://api.jdoodle.com/v1/execute"
 
 module.exports = { REDIS_EVENT, SOCKET_IO_EVENT, FRONT_END_URL, COMPILER_URL }
