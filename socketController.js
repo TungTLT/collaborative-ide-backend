@@ -340,6 +340,7 @@ module.exports = (io, redisClient) => {
         socket.on(SOCKET_IO_EVENT.CHANGE_LANGUAGE, async (params) => {
             const roomId = params['roomId']
             const newLanguage = params['newLanguage']
+            const changeTemplate = params['changeTemplate']
             const roomName = `ROOM:${roomId}`
 
             await redisClient.hSet(`${roomId}:roomInfo`, {
@@ -351,17 +352,19 @@ module.exports = (io, redisClient) => {
                 return
             })
 
-            const templateForNewLang = new PLClient().findLanguage(newLanguage).template
-
-            await redisClient.hSet(`${roomId}:roomInfo`, 'code', templateForNewLang)
-                .catch((err) => {
-                    console.error(redBright.bold(` set code of room error ${err}`))
-                    // TODO: handle error
-                    handleError('Can\'t set code of room', userId)
-                    return
-                })
-
-            socket.in(roomName).emit(SOCKET_IO_EVENT.CODE_CHANGED, templateForNewLang)
+            if (changeTemplate) {
+                const templateForNewLang = new PLClient().findLanguage(newLanguage).template
+    
+                await redisClient.hSet(`${roomId}:roomInfo`, 'code', templateForNewLang)
+                    .catch((err) => {
+                        console.error(redBright.bold(` set code of room error ${err}`))
+                        // TODO: handle error
+                        handleError('Can\'t set code of room', userId)
+                        return
+                    })
+    
+                socket.in(roomName).emit(SOCKET_IO_EVENT.CODE_CHANGED, templateForNewLang)
+            }
 
             socket.in(roomName).emit(SOCKET_IO_EVENT.CHANGE_LANGUAGE, newLanguage)
         })
