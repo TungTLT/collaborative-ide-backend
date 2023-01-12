@@ -25,7 +25,7 @@ module.exports = (io, redisClient) => {
                 .catch((err) => {
                     console.error(redBright.bold(`get users with ${err}`))
                     // TODO: handle error
-                    handleError('Can\'t get information of users in roon', userId)
+                    handleError('Can\'t get information of users in roon', socket.id)
                     return
                 })
 
@@ -334,7 +334,7 @@ module.exports = (io, redisClient) => {
                     return
                 })
             const roomName = `ROOM:${roomId}`
-            socket.to(roomName).emit(SOCKET_IO_EVENT.COLOR_CHANGED, {userId, userToColor})
+            socket.to(roomName).emit(SOCKET_IO_EVENT.COLOR_CHANGED, { userId, userToColor })
         })
 
         socket.on(SOCKET_IO_EVENT.CHANGE_LANGUAGE, async (params) => {
@@ -348,21 +348,21 @@ module.exports = (io, redisClient) => {
             }).catch((err) => {
                 console.error(redBright.bold(` set room info error ${err}`))
                 // TODO: handle error
-                handleError('Can\'t set room info', userId)
+                handleError('Can\'t set room info', socket.id)
                 return
             })
 
             if (changeTemplate) {
                 const templateForNewLang = new PLClient().findLanguage(newLanguage).template
-    
+
                 await redisClient.hSet(`${roomId}:roomInfo`, 'code', templateForNewLang)
                     .catch((err) => {
                         console.error(redBright.bold(` set code of room error ${err}`))
                         // TODO: handle error
-                        handleError('Can\'t set code of room', userId)
+                        handleError('Can\'t set code of room', socket.id)
                         return
                     })
-    
+
                 socket.in(roomName).emit(SOCKET_IO_EVENT.CODE_CHANGED, templateForNewLang)
             }
 
@@ -378,7 +378,7 @@ module.exports = (io, redisClient) => {
                 .catch((err) => {
                     console.error(redBright.bold(`set room info error ${err}`))
                     // TODO: handle error
-                    handleError('Can\'t set room info', userId)
+                    handleError('Can\'t set room info', socket.id)
                     return
                 })
 
@@ -391,7 +391,7 @@ module.exports = (io, redisClient) => {
             socket.in(roomName).emit(SOCKET_IO_EVENT.COMPILE_STATE_CHANGED, state)
         })
 
-        socket.on('TOGGLE_MICROPHONE', async ({ userId, roomId, micState }) => {
+        socket.on(SOCKET_IO_EVENT.TOGGLE_MICROPHONE, async ({ userId, roomId, micState }) => {
             const roomName = `ROOM:${roomId}`
             const micValue = micState ? 'true' : 'false'
             await redisClient.hSet(`${userId}:userInfo`, 'micState', micValue)
@@ -400,7 +400,7 @@ module.exports = (io, redisClient) => {
             })
         })
 
-        socket.on('TOGGLE_CAMERA', async ({ userId, roomId, camState }) => {
+        socket.on(SOCKET_IO_EVENT.TOGGLE_CAMERA, async ({ userId, roomId, camState }) => {
             const roomName = `ROOM:${roomId}`
             const camValue = camState ? 'true' : 'false'
             await redisClient.hSet(`${userId}:userInfo`, 'camState', camValue)
@@ -409,7 +409,7 @@ module.exports = (io, redisClient) => {
             })
         })
 
-        socket.on('CHAT_MESSAGE', async ({ username, roomId, message, date }) => {
+        socket.on(SOCKET_IO_EVENT.CHAT_MESSAGE, async ({ username, roomId, message, date }) => {
             console.log(`receive date: ${date}`)
 
             // Map object to string
@@ -419,7 +419,7 @@ module.exports = (io, redisClient) => {
                 .catch((err) => {
                     console.error(redBright.bold(`save chat messages with ${err}`))
                     // TODO: handle error
-                    handleError('Can\'t save chat messages', userId)
+                    handleError('Can\'t save chat messages', socket.id)
                     return
                 })
 
@@ -427,7 +427,7 @@ module.exports = (io, redisClient) => {
             socket.in(roomName).emit('CHAT_MESSAGE', { 'senderName': username, message, date })
         })
 
-        socket.on('LISTEN_TO_SPEAKER', ({ roomId, isSpeaking }) => {
+        socket.on(SOCKET_IO_EVENT.LISTEN_TO_SPEAKER, ({ roomId, isSpeaking }) => {
             const roomName = `ROOM:${roomId}`
             socket.in(roomName).emit('LISTEN_TO_SPEAKER', { 'userId': socket.id, isSpeaking })
         })
