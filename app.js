@@ -4,14 +4,24 @@ var logger = require('morgan');
 const http = require('http')
 const { Server } = require('socket.io')
 const cors = require('cors')
-const { blueBright, greenBright, redBright } = require('chalk')
-const { redisClient } = require('./redis_client')
+const { greenBright, redBright } = require('chalk')
+const { redisClient } = require('./database/redis_client')
+const { FRONT_END_URL } = require('./utils/constants')
+require('dotenv').config()
+
 
 var indexRouter = require('./routes/index');
+var compilerRouter = require('./routes/compiler')
+var saveCodeRouter = require('./routes/save-data')
 
 var app = express();
 const server = http.createServer(app)
-const io = new Server(server)
+const io = new Server(server, {
+    cors: {
+        origin: FRONT_END_URL
+        // origin: "http://localhost:3000"
+    }
+})
 
 redisClient.connect()
     .then(() => console.log(greenBright.bold('CONNECTED to redis!')))
@@ -29,43 +39,11 @@ app.use(cookieParser());
 
 // router
 app.use('/', indexRouter);
+app.use('/compiler', compilerRouter);
+app.use('/data/save', saveCodeRouter)
 
 // socketio event handler
-io.on('connection', (socket) => {
-    socket.on('CODE_CHANGED', async (code) => {
-        const { roomId, username } = await redisClient.hGetAll(socket.id)
-
-        const roomName = `ROOM:${roomId}`
-        socket.to(roomName).emit('CODE_CHANGED', code)
-    })
-
-    socket.on('DISSCONNECT_FROM_ROOM', async ({ roomId, username }) => console.log(blueBright.bold(`${username} disconnect from room ${roomId}`)))
-
-    socket.on('CONNECTED_TO_ROOM', async ({ roomId, username }) => {
-        await redisClient.lPush(`${roomId}:users`, `${username}`)
-        await redisClient.hSet(socket.id, { roomId, username })
-        const users = await redisClient.lRange(`${roomId}:users`, 0, -1)
-        const roomName = `ROOM:${roomId}`
-        socket.join(roomName)
-        io.in(roomName).emit('ROOM:CONNECTION', users)
-    })
-
-    socket.on('disconnect', async () => {
-        // TODO if 2 users have the same name
-        const { roomId, username } = await redisClient.hGetAll(socket.id)
-        const users = await redisClient.lRange(`${roomId}:users`, 0, -1)
-        const newUsers = users.filter((user) => username !== user)
-        if (newUsers.length) {
-            await redisClient.del(`${roomId}:users`)
-            await redisClient.lPush(`${roomId}:users`, newUsers)
-        } else {
-            await redisClient.del(`${roomId}:users`)
-        }
-        const roomName = `ROOM:${roomId}`
-        console.log({ newUsers })
-        io.in(roomName).emit('ROOM:CONNECTION', newUsers)
-    })
-})
+require('./socketController')(io, redisClient)
 
 server.listen(3001, () => {
     console.log(greenBright.bold(`listening on *:${server.address().port}`))
